@@ -38,6 +38,7 @@ interface NewStaffOrientationViewProps {
   candidates: Candidate[];
   onboardingTasks: OnboardingTaskItem[];
   onToggleTask: (taskId: string) => void;
+  onSaveTasks: (tasks: OnboardingTaskItem[]) => void;
   onActivateStaffProfile: (candidate: Candidate) => void;
   onNavigate: (view: ActiveView, param?: string) => void;
 }
@@ -98,6 +99,7 @@ export const NewStaffOrientationView: React.FC<NewStaffOrientationViewProps> = (
   candidates,
   onboardingTasks,
   onToggleTask,
+  onSaveTasks,
   onActivateStaffProfile,
   onNavigate,
 }) => {
@@ -122,7 +124,6 @@ export const NewStaffOrientationView: React.FC<NewStaffOrientationViewProps> = (
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const [localCustomTasks, setLocalCustomTasks] = useState<OnboardingTaskItem[]>([]);
   const [newCustomTaskTitle, setNewCustomTaskTitle] = useState('');
   const [newCustomTaskOfficer, setNewCustomTaskOfficer] = useState('Sarah Namubiru (HR Officer)');
   const [newCustomTaskCategory, setNewCustomTaskCategory] = useState<string>('Departmental Orientation');
@@ -259,8 +260,8 @@ export const NewStaffOrientationView: React.FC<NewStaffOrientationViewProps> = (
   }));
 
   const activeTasks: OnboardingTaskItem[] = candidatePropsTasks.length > 0 
-    ? [...candidatePropsTasks, ...localCustomTasks.filter(t => t.candidateId === activeCandidate?.id)]
-    : [...syntheticTasks, ...localCustomTasks.filter(t => t.candidateId === activeCandidate?.id)];
+    ? candidatePropsTasks
+    : syntheticTasks;
 
   const completedCount = activeTasks.filter(t => t.completed).length;
   const progressPct = activeTasks.length > 0 
@@ -271,23 +272,16 @@ export const NewStaffOrientationView: React.FC<NewStaffOrientationViewProps> = (
     if (candidatePropsTasks.some(t => t.id === task.id)) {
       onToggleTask(task.id);
     } else {
-      setLocalCustomTasks(prev => {
-        const existing = prev.find(t => t.id === task.id);
-        if (existing) {
-          return prev.map(t => t.id === task.id ? { ...t, completed: !t.completed, completedDate: !t.completed ? '16-Aug-2026' : undefined } : t);
-        } else {
-          return [...prev, { ...task, completed: !task.completed, completedDate: !task.completed ? '16-Aug-2026' : undefined }];
-        }
-      });
+      onSaveTasks(activeTasks.map(t => t.id === task.id ? {
+        ...t, completed: !t.completed, status: !t.completed ? 'Completed' : 'Pending',
+        completedDate: !t.completed ? new Date().toISOString().slice(0, 10) : undefined,
+      } : t));
     }
   };
 
   const handleCompleteAllTasks = () => {
-    activeTasks.forEach(task => {
-      if (!task.completed) {
-        handleTaskClick(task);
-      }
-    });
+    onSaveTasks(activeTasks.map(task => ({ ...task, completed: true, status: 'Completed',
+      completedDate: task.completedDate || new Date().toISOString().slice(0, 10) })));
     showToast('All induction checklist steps marked as completed.');
   };
 
@@ -306,7 +300,7 @@ export const NewStaffOrientationView: React.FC<NewStaffOrientationViewProps> = (
       assignedRole: newCustomTaskOfficer,
       assignedOfficer: newCustomTaskOfficer
     };
-    setLocalCustomTasks(prev => [...prev, newTask]);
+    onSaveTasks([...activeTasks, newTask]);
     setNewCustomTaskTitle('');
     setShowAddCustom(false);
     showToast('New induction step added successfully.');

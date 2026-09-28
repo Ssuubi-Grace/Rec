@@ -152,8 +152,8 @@ export default function App() {
         setRecruitmentHydrated(true);
       })
       .catch((err) => {
-        console.warn('Using in-memory seed; API unavailable:', err);
-        if (!cancelled) setRecruitmentHydrated(true);
+        console.warn('Recruitment data could not be loaded:', err);
+        if (!cancelled) setPersistError('Unable to load saved records. Please retry when the server is available.');
       });
     return () => {
       cancelled = true;
@@ -171,7 +171,8 @@ export default function App() {
         onboardingTasks,
         approvalTasks,
         documentTemplates,
-      }).catch(() => setPersistError('Changes could not be saved to the server. Retrying on next edit.'));
+      }).then(() => setPersistError(null))
+        .catch(() => setPersistError('Changes could not be saved to the server. Retrying on next edit.'));
     }, 900);
     return () => window.clearTimeout(timer);
   }, [
@@ -661,13 +662,14 @@ export default function App() {
 
   // Handlers: Orientation & Task Toggle
   const handleToggleOnboardingTask = (taskId: string) => {
-    setOnboardingTasks(onboardingTasks.map(t => {
+    setOnboardingTasks(prev => prev.map(t => {
       if (t.id === taskId) {
         const completed = !t.completed;
         return {
           ...t,
           completed,
-          completedDate: completed ? '16-Aug-2026' : undefined,
+          status: completed ? 'Completed' : 'Pending',
+          completedDate: completed ? new Date().toISOString().slice(0, 10) : undefined,
         };
       }
       return t;
@@ -873,7 +875,8 @@ export default function App() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-[#f8fafc] text-slate-600">
         <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
-        <p className="text-sm font-semibold">Loading ProMISe recruitment data…</p>
+        <p className="text-sm font-semibold">{persistError || 'Loading ProMISe recruitment data…'}</p>
+        {persistError && <button onClick={() => window.location.reload()} className="px-4 py-2 rounded bg-white border">Retry loading records</button>}
       </div>
     );
   }
@@ -1211,6 +1214,7 @@ export default function App() {
             candidates={candidates}
             onboardingTasks={onboardingTasks}
             onToggleTask={handleToggleOnboardingTask}
+            onSaveTasks={(tasks) => setOnboardingTasks(prev => [...prev.filter(t => !tasks.some(updated => updated.id === t.id)), ...tasks])}
             onActivateStaffProfile={handleActivateStaffProfile}
             onNavigate={setActiveView}
           />

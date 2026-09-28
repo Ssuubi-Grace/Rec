@@ -1,8 +1,9 @@
+import 'dotenv/config';
 import fs from 'fs';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { closeDb, initDb, loadRecruitmentState, resetRecruitmentState, saveRecruitmentState } from './db.ts';
+import { checkStorage, closeDb, initDb, loadRecruitmentState, resetRecruitmentState, saveRecruitmentState } from './db.ts';
 import type { RecruitmentStatePayload } from './seedData.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -12,12 +13,13 @@ const distPath = path.join(__dirname, '..', 'dist');
 const app = express();
 app.use(express.json({ limit: '12mb' }));
 
-app.get('/api/health', (_req, res) => {
-  res.json({
-    ok: true,
-    storage: process.env.DATABASE_URL ? 'postgres' : 'file',
-    time: new Date().toISOString(),
-  });
+app.get('/api/health', async (_req, res) => {
+  try {
+    const storage = await checkStorage();
+    res.json({ ok: true, storage, durable: storage === 'postgres', time: new Date().toISOString() });
+  } catch {
+    res.status(503).json({ ok: false, storage: 'postgres', error: 'Database is unavailable' });
+  }
 });
 
 app.get('/api/recruitment/state', async (_req, res) => {
@@ -33,7 +35,7 @@ app.get('/api/recruitment/state', async (_req, res) => {
 app.put('/api/recruitment/state', async (req, res) => {
   try {
     const body = req.body as RecruitmentStatePayload;
-    if (!body?.requisitions || !body?.candidates) {
+    if (!body || !['requisitions', 'candidates', 'psychometricTests', 'offers', 'onboardingTasks', 'approvalTasks', 'documentTemplates'].every(key => Array.isArray(body[key]))) {
       res.status(400).json({ error: 'Invalid state payload' });
       return;
     }

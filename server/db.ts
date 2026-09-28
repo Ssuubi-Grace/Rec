@@ -10,6 +10,15 @@ const FILE_STORE = path.join(__dirname, '.data', 'recruitment-state.json');
 
 let pool: pg.Pool | null = null;
 
+export async function checkStorage(): Promise<'postgres' | 'file'> {
+  if (usePostgres()) {
+    if (!pool) throw new Error('Database is not initialized');
+    await pool.query('SELECT 1');
+    return 'postgres';
+  }
+  return 'file';
+}
+
 function usePostgres(): boolean {
   return Boolean(process.env.DATABASE_URL?.trim());
 }
@@ -18,6 +27,7 @@ export async function initDb(): Promise<void> {
   if (usePostgres()) {
     pool = new pg.Pool({
       connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: 10000,
       ssl: process.env.DATABASE_SSL !== 'false' ? { rejectUnauthorized: false } : undefined,
     });
     await pool.query(`
