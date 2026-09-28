@@ -28,10 +28,12 @@ git push -u demo main
 
 1. Go to [render.com](https://render.com) → **New** → **Blueprint**.
 2. Connect the GitHub repo containing this project.
-3. Render reads **`render.yaml`**, which creates:
-   - **Web service** `promise-recruitment` (Node, builds Vite + runs API)
-   - **PostgreSQL** `promise-recruitment-db` (free tier)
-4. Deploy. First deploy takes a few minutes.
+3. Render reads **`render.yaml`**, which creates only the **web service** `promise-recruitment` (no new database — Render free tier allows **one** Postgres per account).
+4. **Link your existing Postgres** (do not delete anything):
+   - Render → **Databases** → open the Postgres you already use → copy **Internal Database URL** (or External if required).
+   - Open **promise-recruitment** → **Environment** → set **`DATABASE_URL`** to that value → **Save** ( redeploy if prompted ).
+   - This app uses table `app_state` with id `recruitment`; other apps on the same DB are fine if they use different tables/keys.
+5. **Manual sync** the Blueprint (or push the latest `render.yaml` from GitHub) and deploy. First deploy takes a few minutes.
 
 Your boss demo URL will look like:
 
@@ -58,6 +60,7 @@ curl -X POST https://YOUR-SERVICE.onrender.com/api/recruitment/reset
 
 - Render free web services **spin down** after inactivity; first visit may take 30–60s to wake.
 - Free Postgres has storage limits; fine for demo volume.
+- One free Postgres per Render account — reuse it via `DATABASE_URL` instead of creating a second DB in the blueprint.
 
 ## API (for reference)
 
