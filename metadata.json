@@ -1,0 +1,6 @@
+{
+  "name": "ProMISe ERP · Promise Recruitment | HRMIS Module",
+  "description": "Enterprise HRMIS Staff Requisition & E-Recruitment System featuring requisition workflows, automated pre-shortlisting, dynamic psychometric testing, interview board scoring, offer letter issuance & digital acceptance, multi-stage onboarding, talent pool repository, approval tasks, and applicant tracking portal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
