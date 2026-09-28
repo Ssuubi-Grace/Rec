@@ -364,7 +364,7 @@ export const HrmisAuthLanding: React.FC<HrmisAuthLandingProps> = ({
       <div className="hrmis-landing-cta-band">
         <div className="hrmis-landing-cta-inner">
           <div>
-            <h2 className="text-xl font-bold font-serif">Recruitment that stays on track.</h2>
+            <h2 className="text-xl font-bold tracking-tight">Recruitment that stays on track.</h2>
             <p className="text-sm text-white/85 mt-1 max-w-md">
               Reduce approval delays, publish vacancies automatically, and give hiring teams one place to decide.
             </p>
