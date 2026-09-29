@@ -172,7 +172,7 @@ export const ApprovalTasksView: React.FC<ApprovalTasksViewProps> = ({
               <th>Workflow Item & Reference</th>
               <th>Department</th>
               <th>Initiator & Approver</th>
-              <th>Date Submitted</th>
+              <th>Submission &amp; Closing Dates</th>
               <th className="text-center">Status</th>
               <th className="text-center">Workflow Governance Actions</th>
             </tr>
@@ -259,7 +259,12 @@ export const ApprovalTasksView: React.FC<ApprovalTasksViewProps> = ({
                   <td className="py-4 px-4 text-gray-500 text-[11px] align-top">
                     <div className="flex items-center gap-1.5 pt-0.5">
                       <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                      <span>{t.submittedDate || t.dateSubmitted || '16-Aug-2026'}</span>
+                      <span>
+                        Submitted: {t.submittedDate || t.dateSubmitted || 'Not recorded'}
+                        {getRelatedEntities(t).req?.applicationDeadline && (
+                          <small className="block mt-1 text-gray-500">Closes: {getRelatedEntities(t).req?.applicationDeadline}</small>
+                        )}
+                      </span>
                     </div>
                   </td>
 

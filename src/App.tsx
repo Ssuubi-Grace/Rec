@@ -52,6 +52,13 @@ import { DEFAULT_DOCUMENT_TEMPLATES } from './data/documentTemplatesData';
 import { fetchRecruitmentState, persistRecruitmentState } from './api/recruitmentState';
 import { Requisition, Candidate, PsychometricTest, OfferLetter, OnboardingTaskItem, ApprovalTask, OnboardingDocumentTemplate } from './types';
 
+const todayDisplay = () => new Date().toLocaleDateString('en-GB', {
+  day: '2-digit', month: 'short', year: 'numeric',
+}).replace(/ /g, '-');
+const defaultDeadlineDisplay = () => new Date(Date.now() + 14 * 86400000).toLocaleDateString('en-GB', {
+  day: '2-digit', month: 'short', year: 'numeric',
+}).replace(/ /g, '-');
+
 export default function App() {
   // Navigation & Role State
   const [activeView, setActiveView] = useState<ActiveView>('recruitment-command-center');
@@ -220,7 +227,7 @@ export default function App() {
               referenceNo: newReqData.reqNo || `REQ/2026/00${requisitions.length + 1}`,
               title: `Requisition Approval: ${newReqData.position} (${newReqData.department})`,
               submittedBy: newReqData.submittedBy || 'Department Head',
-              submittedDate: '24-Aug-2026',
+              submittedDate: newReqData.submittedDate || todayDisplay(),
               status: 'Pending',
               assignedTo: newReqData.assignedApprover || 'Sarah Namubiru (HR Director)',
               priority: 'High',
@@ -262,7 +269,8 @@ export default function App() {
       requiredQualifications: newReqData.requiredQualifications,
       requiredSkills: newReqData.requiredSkills,
       assessmentMethodology: newReqData.assessmentMethodology,
-      applicationDeadline: newReqData.applicationDeadline || '15 Sep 2026',
+      applicationDeadline: newReqData.applicationDeadline || defaultDeadlineDisplay(),
+      createdDate: newReqData.createdDate || todayDisplay(),
       ...newReqData
     };
     setRequisitions(prev => [newReq, ...prev]);
@@ -276,7 +284,7 @@ export default function App() {
           referenceNo: newReq.reqNo,
           title: `Requisition Approval: ${newReq.position} (${newReq.department})`,
           submittedBy: newReq.submittedBy || 'Department Head',
-          submittedDate: '24-Aug-2026',
+          submittedDate: newReq.submittedDate || todayDisplay(),
           status: 'Pending',
           assignedTo: newReq.assignedApprover || 'Sarah Namubiru (HR Director)',
           priority: 'High',
@@ -301,7 +309,8 @@ export default function App() {
         return {
           ...r,
           status: 'Pending HR',
-          submittedAt: 'Just now',
+          submittedAt: new Date().toISOString(),
+          submittedDate: todayDisplay(),
         };
       }
       return r;
@@ -315,7 +324,7 @@ export default function App() {
           referenceNo: req.reqNo,
           title: `Requisition Approval: ${req.position} (${req.department})`,
           submittedBy: 'Department Head',
-          submittedDate: '24-Aug-2026',
+          submittedDate: todayDisplay(),
           status: 'Pending',
           assignedTo: req.assignedApprover || 'Sarah Namubiru (HR Director)',
           priority: 'High',
@@ -333,7 +342,7 @@ export default function App() {
         return {
           ...r,
           isPublished: true,
-          publishedDate: '24-Aug-2026',
+          publishedDate: todayDisplay(),
           status: 'Approved'
         };
       }
@@ -384,6 +393,11 @@ export default function App() {
   };
 
   const handleApplyJob = (newCandidate: Omit<Candidate, 'id'>) => {
+    const existing = candidates.find(c =>
+      c.requisitionId === newCandidate.requisitionId &&
+      c.email.trim().toLowerCase() === newCandidate.email.trim().toLowerCase()
+    );
+    if (existing) return existing.id;
     const newId = `c-${Date.now()}`;
     const fullCandidate: Candidate = {
       ...newCandidate,

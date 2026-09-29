@@ -171,8 +171,14 @@ export const CreateRequisitionView: React.FC<CreateRequisitionViewProps> = ({
   const [newSkillName, setNewSkillName] = useState('');
 
   const [recruitmentRoute, setRecruitmentRoute] = useState<'Internal' | 'External' | 'Internal + External'>('Internal + External');
-  const [publishDate, setPublishDate] = useState('21-Sep-2026');
-  const [closingDate, setClosingDate] = useState('07-Oct-2026');
+  const todayYMD = new Date().toISOString().slice(0, 10);
+  const defaultClosingYMD = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+  const [publishDate, setPublishDate] = useState(
+    formatDateToYMD(initialData?.plannedPublishDate || initialData?.publishedDate) || todayYMD
+  );
+  const [closingDate, setClosingDate] = useState(
+    formatDateToYMD(initialData?.applicationDeadline) || defaultClosingYMD
+  );
   const [channels, setChannels] = useState({
     careerPortal: true,
     staffPortal: true,
@@ -300,6 +306,10 @@ export const CreateRequisitionView: React.FC<CreateRequisitionViewProps> = ({
       stage: 'Requisition',
       
       // Approval fields
+      createdDate: initialData?.createdDate || formatYMDToDisplay(todayYMD),
+      submittedDate: targetStatus === 'Pending HR'
+        ? (initialData?.submittedDate || formatYMDToDisplay(todayYMD))
+        : initialData?.submittedDate,
       assignedApprover,
       submittedAt: targetStatus === 'Pending HR' ? 'Just now' : undefined,
       submittedBy: 'Department Head / Requisition Author',
@@ -326,7 +336,8 @@ export const CreateRequisitionView: React.FC<CreateRequisitionViewProps> = ({
         'Professional ethics, problem solving, and effective communication'
       ],
       assessmentMethodology,
-      applicationDeadline: applicationDeadline ? formatYMDToDisplay(applicationDeadline) : '15 Sep 2026'
+      plannedPublishDate: publishDate ? formatYMDToDisplay(publishDate) : undefined,
+      applicationDeadline: closingDate ? formatYMDToDisplay(closingDate) : (applicationDeadline ? formatYMDToDisplay(applicationDeadline) : undefined)
     };
 
     onSaveRequisition(newReq);
@@ -1180,11 +1191,11 @@ export const CreateRequisitionView: React.FC<CreateRequisitionViewProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Proposed Publication Date</label>
-                  <input type="text" value={publishDate} onChange={(e) => setPublishDate(e.target.value)} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs" />
+                  <input type="date" value={publishDate} onChange={(e) => setPublishDate(e.target.value)} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs" />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Application Closing Date</label>
-                  <input type="text" value={closingDate} onChange={(e) => setClosingDate(e.target.value)} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs" />
+                  <input type="date" value={closingDate} min={publishDate || todayYMD} onChange={(e) => { setClosingDate(e.target.value); setApplicationDeadline(e.target.value); }} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs" />
                 </div>
               </div>
 

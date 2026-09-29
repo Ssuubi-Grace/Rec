@@ -391,7 +391,7 @@ export const NewStaffRequestsView: React.FC<NewStaffRequestsViewProps> = ({
               <th>Position Title</th>
               <th>Category / Scale</th>
               <th className="text-center whitespace-nowrap">Vacancies</th>
-              <th className="whitespace-nowrap">Reporting &amp; Budget</th>
+              <th className="whitespace-nowrap">Key Dates &amp; Budget</th>
               <th className="text-center">Governance Status</th>
               <th className="text-center">Portal Status</th>
               <th className="text-center">Actions</th>
@@ -447,9 +447,12 @@ export const NewStaffRequestsView: React.FC<NewStaffRequestsViewProps> = ({
                       {req.vacancies}
                     </td>
 
-                    {/* Reporting & Budget */}
+                    {/* Requisition dates & budget */}
                     <td className="py-2 px-3 border-r border-[#e2e8f0] whitespace-nowrap">
-                      <span className="block text-gray-700">{req.dateOfReporting}</span>
+                      <span className="block text-[10px] text-gray-600">Created: <strong>{req.createdDate || 'Legacy record'}</strong></span>
+                      <span className="block text-[10px] text-gray-600">Submitted: <strong>{req.submittedDate || (req.submittedAt && req.submittedAt !== 'Just now' ? req.submittedAt : 'Not submitted')}</strong></span>
+                      <span className="block text-[10px] text-gray-600">Closes: <strong>{req.applicationDeadline || 'Not specified'}</strong></span>
+                      <span className="block text-[10px] text-gray-600">Reports: <strong>{req.dateOfReporting}</strong></span>
                       <span className="text-[10px] font-mono font-semibold text-emerald-800">
                         {req.currency || 'UGX'} {req.budget}
                       </span>

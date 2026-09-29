@@ -340,15 +340,16 @@ export const CandidatePortalView: React.FC<CandidatePortalViewProps> = ({
   }, [currentUser, onAuthChange]);
 
   // Calculate Candidate Applications matching current user
-  const userApplications = candidates.filter(c => {
+  const matchingUserApplications = candidates.filter(c => {
     if (!currentUser) return false;
-    const emailMatch = c.email.toLowerCase() === currentUser.email.toLowerCase() || 
-      c.email.toLowerCase().includes(currentUser.email.split('@')[0].toLowerCase()) ||
-      currentUser.email.toLowerCase().includes(c.email.split('@')[0].toLowerCase());
-    const nameMatch = c.name.toLowerCase().includes(currentUser.name.toLowerCase()) ||
-      currentUser.name.toLowerCase().includes(c.name.toLowerCase());
-    return emailMatch || nameMatch || c.id === 'cand-1' || c.id === 'c1' || c.id === 'c2';
+    const identity = (value: string) => value.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const userTokens = [identity(currentUser.email), identity(currentUser.name)].filter(Boolean);
+    const candidateTokens = [identity(c.email), identity(c.name)].filter(Boolean);
+    return userTokens.some(token => candidateTokens.includes(token));
   });
+  const userApplications = matchingUserApplications.filter((candidate, index, list) =>
+    list.findIndex(item => item.requisitionId === candidate.requisitionId) === index
+  );
 
   const openCandidateSignIn = (intent: 'default' | 'track' = 'default') => {
     setSignInIntent(intent);
@@ -471,9 +472,15 @@ export const CandidatePortalView: React.FC<CandidatePortalViewProps> = ({
   const handleFinalSubmitApplication = () => {
     if (!activeApplyingJob) return;
 
+    const applicantEmail = currentUser?.email.includes('@') ? currentUser.email : profileData.email;
+    const alreadySubmitted = candidates.some(c =>
+      c.requisitionId === activeApplyingJob.id &&
+      c.email.trim().toLowerCase() === applicantEmail.trim().toLowerCase()
+    );
+
     const newCandidateData: Omit<Candidate, 'id'> = {
       name: `${profileData.firstName} ${profileData.lastName}`,
-      email: profileData.email,
+      email: applicantEmail,
       phone: profileData.phone,
       countryCode: profileData.phoneCountryCode || '256',
       nationalId: profileData.nationalId || 'CM96023412X98A',
@@ -492,7 +499,7 @@ export const CandidatePortalView: React.FC<CandidatePortalViewProps> = ({
       skills: profileData.skills || ['Full-Stack Development', 'PostgreSQL'],
       employmentHistory: `${profileData.employmentHistory?.[0]?.jobTitle} at ${profileData.employmentHistory?.[0]?.nameOfOrganisation}`,
       coverLetter: profileData.relevantExperience || 'Application for ' + activeApplyingJob.position,
-      appliedDate: 'Today',
+      appliedDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-'),
       status: 'Applied',
       matchScore: 88,
       resumeUrl: profileData.documents?.[0]?.fileName || 'Resume_2026.pdf',
@@ -500,11 +507,13 @@ export const CandidatePortalView: React.FC<CandidatePortalViewProps> = ({
       notes: 'Submitted via ProMISe Online Career Portal.'
     };
 
-    if (onApplyJob) {
+    if (onApplyJob && !alreadySubmitted) {
       onApplyJob(newCandidateData);
     }
 
-    setPortalNotification(`✓ Congratulations! Your application for "${activeApplyingJob.position}" has been submitted successfully.`);
+    setPortalNotification(alreadySubmitted
+      ? `Your application for "${activeApplyingJob.position}" was already submitted and is shown under My Applications.`
+      : `✓ Congratulations! Your application for "${activeApplyingJob.position}" has been submitted successfully.`);
     setTimeout(() => setPortalNotification(null), 5000);
     setCurrentScreen('my_applications');
   };
@@ -529,7 +538,7 @@ Salary Scale / Band:     ${req.salaryScale || 'Scale 5A'}
 Available Openings:      ${req.vacancies} Position(s)
 Position Budget:         ${req.currency || 'UGX'} ${req.budget}
 Date of Commencement:    ${req.dateOfReporting || 'Immediate / Next Quarter'}
-Application Deadline:    ${req.applicationDeadline || '15 Sep 2026'}
+Application Deadline:    ${req.applicationDeadline || 'Not specified'}
 Duty Station:            Plot 14, Lumumba Avenue, Kampala, Uganda (Head Office)
 
 2. ROLE PURPOSE & STRATEGIC MISSION
@@ -938,14 +947,15 @@ Security:  Cryptographic SHA-256 Hash Verification • ProMISe e-Sign Framework
                     <th className="py-2.5 px-4 border-r border-[#e2e8f0] min-w-[200px]">Vacancy Name ▲</th>
                     <th className="py-2.5 px-3 border-r border-[#e2e8f0] text-center min-w-[150px]">Minimum Years of Experience</th>
                     <th className="py-2.5 px-3 border-r border-[#e2e8f0] text-center min-w-[130px]">Number of Vacancies</th>
-                    <th className="py-2.5 px-3 border-r border-[#e2e8f0] text-center min-w-[110px]">Deadline</th>
+                    <th className="py-2.5 px-3 border-r border-[#e2e8f0] text-center min-w-[110px]">Published</th>
+                    <th className="py-2.5 px-3 border-r border-[#e2e8f0] text-center min-w-[110px]">Closing Date</th>
                     <th className="py-2.5 px-4 text-center min-w-[200px]">Options</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e2e8f0]">
                   {publishedVacancies.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-10 text-center text-gray-500">
+                      <td colSpan={7} className="py-10 text-center text-gray-500">
                         No active vacancies currently open matching your search. Check back soon!
                       </td>
                     </tr>
@@ -976,7 +986,10 @@ Security:  Cryptographic SHA-256 Hash Verification • ProMISe e-Sign Framework
                           {v.vacancies}
                         </td>
                         <td className="py-3 px-3 border-r border-[#e2e8f0] text-center font-mono text-[11px] text-gray-700">
-                          {v.applicationDeadline || v.dateOfReporting || '15 Sep 2026'}
+                          {v.publishedDate || v.plannedPublishDate || 'Pending'}
+                        </td>
+                        <td className="py-3 px-3 border-r border-[#e2e8f0] text-center font-mono text-[11px] text-gray-700">
+                          {v.applicationDeadline || 'Not specified'}
                         </td>
                         <td className="py-3 px-4 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-2">
@@ -1804,7 +1817,7 @@ Security:  Cryptographic SHA-256 Hash Verification • ProMISe e-Sign Framework
             </div>
             <div className="text-right">
               <span className="text-[10px] text-gray-500 block">Application Deadline:</span>
-              <strong className="font-mono text-gray-800">{activeApplyingJob.applicationDeadline || '15 Sep 2026'}</strong>
+              <strong className="font-mono text-gray-800">{activeApplyingJob.applicationDeadline || 'Not specified'}</strong>
             </div>
           </div>
 
@@ -2322,7 +2335,7 @@ Security:  Cryptographic SHA-256 Hash Verification • ProMISe e-Sign Framework
               </div>
               <div>
                 <span className="text-gray-500 block">Deadline Date:</span>
-                <strong className="font-mono text-[#b91c1c]">{selectedJobForAdvertModal.applicationDeadline || selectedJobForAdvertModal.dateOfReporting || '15 Sep 2026'}</strong>
+                <strong className="font-mono text-[#b91c1c]">{selectedJobForAdvertModal.applicationDeadline || 'Not specified'}</strong>
               </div>
             </div>
 

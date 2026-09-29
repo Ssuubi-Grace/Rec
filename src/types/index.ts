@@ -26,6 +26,8 @@ export interface Requisition {
   stage?: 'Requisition' | 'Shortlisting' | 'Assessment' | 'Interview' | 'Offer' | 'Orientation' | 'Filled';
   
   // Approval Workflow Fields
+  createdDate?: string;
+  submittedDate?: string;
   assignedApprover?: string;
   approverRole?: string;
   submittedAt?: string;
@@ -39,6 +41,7 @@ export interface Requisition {
   // Career Portal Publishing
   isPublished?: boolean;
   publishedDate?: string;
+  plannedPublishDate?: string;
   
   // Job Advert & JD Format (Template vs Attachment)
   jdFormat?: 'template' | 'attachment';
