@@ -112,8 +112,12 @@ export const HrmisAuthLanding: React.FC<HrmisAuthLandingProps> = ({
   };
 
   const formatClosing = (req: Requisition) => {
-    const d = new Date('2026-10-12');
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    if (!req.applicationDeadline) return 'Not specified';
+    const normalized = req.applicationDeadline.replace(/-/g, ' ');
+    const d = new Date(normalized);
+    return Number.isNaN(d.getTime())
+      ? req.applicationDeadline
+      : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   const jobs = featuredVacancies.filter((j) => {
